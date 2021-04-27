@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.signal as ss
 
+
 # detrended fluctuation analysis
 
 def calc_rms(x, scale):
@@ -32,6 +33,7 @@ def calc_rms(x, scale):
         xfit = np.polyval(coeff, scale_ax)
         # detrending and computing RMS of each window
         rms[e] = np.sqrt(np.mean((xcut-xfit)**2))
+    print('Window length: ', scale, ' Number of windows:', rms.shape[0])
     return rms
 
 def dfa(x, scale_lim=[5,9], scale_dens=0.25, show=False):
@@ -87,7 +89,15 @@ def dfa(x, scale_lim=[5,9], scale_dens=0.25, show=False):
         plt.show()
     return scales, fluct, coeff[0]
 
-def calc_rms2(x, scale, overlap,minscale, maxscale):
+
+########################################################################################################
+##In the functions below I allow the windows to be overlapping. The max accepted overlap is defined as##
+##a fraction of the minimum scale considered in the analysis. The code below is also corrected so that##  
+##for each scale considered the same number of windows is used to compute the mean                    ##
+##Benedetta Mariani                                                                                   ##
+########################################################################################################
+
+def calc_rmswithoverlap(x, scale, overlap, minscale, maxscale):
     """
     Root Mean Square in windows with linear detrending.
     
@@ -97,8 +107,10 @@ def calc_rms2(x, scale, overlap,minscale, maxscale):
         one dimensional data vector
       *scale* : int
         length of the window in which RMS will be calculaed
-      *overlap*: 
-        admitted overlap between windows
+      *overlap*: percentage of allowed overlap
+      *minscale*: minumum length of the windows considered
+      *maxscale*: maximum length of the windows considered
+      
     Returns:
     --------
       *rms* : numpy.array
@@ -106,30 +118,24 @@ def calc_rms2(x, scale, overlap,minscale, maxscale):
     
     """
     
-    ## Signal profile
-    # making an array with data divided in windows
-    #shape = (x.shape[0]//scale, scale) # 50 % of overlap is not present...
-    #X = np.lib.stride_tricks.as_strided(x,shape=shape)
-    # vector of x-axis points to regression
     scale_ax = np.arange(scale)
-    overlap = int((1 - overlap/100)*minscale) # percentage of the scale
+    overlap = int((1 - overlap/100)*minscale) 
 
     rms = []
     i = 0
     while i + maxscale < len(x):
         xcut = x[i:i+ scale]
-        #print(e, xcut)
         coeff = np.polyfit(scale_ax, xcut, 1)
         xfit = np.polyval(coeff, scale_ax)
         # detrending and computing RMS of each window
-        rms.append(np.sqrt(np.mean((xcut-xfit)**2)))  #?
+        rms.append(np.sqrt(np.mean((xcut-xfit)**2)))
         i += overlap
         
     rms = np.array(rms)
-    print(rms.shape)
+    print('Window length: ', scale, ' Number of windows:', rms.shape[0])
     return rms
 
-def dfa2(x, scale_lim=[5,9], scale_dens=0.25, show=False, overlap = 50):
+def dfawithoverlap(x, scale_lim=[5,9], scale_dens=0.25, show=False, overlap = 50):
     """
     Detrended Fluctuation Analysis - algorithm with measures power law
     scaling of the given signal *x*.
@@ -149,6 +155,8 @@ def dfa2(x, scale_lim=[5,9], scale_dens=0.25, show=False, overlap = 50):
         density of scale divisions
       *show* = False
         if True it shows matplotlib picture
+      *overlap*: percentage of allowed overlap
+      
     Returns:
     --------
       *scales* : numpy.array
@@ -164,7 +172,7 @@ def dfa2(x, scale_lim=[5,9], scale_dens=0.25, show=False, overlap = 50):
     fluct = np.zeros(len(scales))
     # computing RMS for each window
     for e, sc in enumerate(scales):
-        fluct[e] = np.mean(np.sqrt(calc_rms(y, sc, overlap, min(scales),max(scales))**2)) # inutile... 
+        fluct[e] = np.mean(np.sqrt(calc_rmswithoverlap(y, sc, overlap, min(scales),max(scales))**2)) # inutile... 
     # fitting a line to rms data
     coeff = np.polyfit(np.log2(scales), np.log2(fluct), 1)
     if show:
@@ -179,56 +187,23 @@ def dfa2(x, scale_lim=[5,9], scale_dens=0.25, show=False, overlap = 50):
     return scales, fluct, coeff[0]
 
 
-def power_law_noise(n, alpha, var=1):
-    '''
-    Generale power law noise. 
-    
-    Args:
-    -----
-      *n* : int
-        number of data points
-      *alpha* : float
-        DFA exponent
-      *var* = 1 : float
-        variance
-    Returns:
-    --------
-      *x* : numpy.array
-        generated noisy data with exponent *alpha*
-
-    Based on:
-    N. Jeremy Kasdin, Discrete simulation of power law noise (for
-    oscillator stability evaluation)
-    '''
-    # computing standard deviation from variance
-    stdev = np.sqrt(np.abs(var))
-    beta = 2*alpha-1
-    hfa = np.zeros(2*n)
-    hfa[0] = 1
-    for i in range(1,n):
-        hfa[i] = hfa[i-1] * (0.5*beta + (i-1))/i
-    # sample white noise
-    wfa = np.hstack((-stdev +2*stdev * np.random.rand(n), np.zeros(n)))
-    fh = np.fft.fft(hfa)
-    fw = np.fft.fft(wfa)
-    fh = fh[1:n+1]
-    fw = fw[1:n+1]
-    ftot = fh * fw
-    # matching the conventions of the Numerical Recipes
-    ftot = np.hstack((ftot, np.zeros(n-1)))
-    x = np.fft.ifft(ftot)    
-    return np.real(x[:n])
-
-
-
 if __name__=='__main__':
-    n = 1000
+    n = 10000
     x = np.random.randn(n)
     # computing DFA of signal envelope
     x = np.abs(ss.hilbert(x))
     scales, fluct, alpha = dfa(x, show=1)
-    print(scales)
-    print(fluct)
+    print("DFA exponent: {}".format(alpha))
+    
+    
+    n = 10000
+    x = np.random.randn(n)
+    # computing DFA of signal envelope with potentially overlapping windows
+    x = np.abs(ss.hilbert(x))
+    scales, fluct, alpha = dfawithoverlap(x, show=1, overlap = 50)
+    ##Note that now for each window length, the same number of windows is considered to compute the 
+    ##mean, while before biases were potentially introduced while considering averages referring to 
+    ##different numbers of windows
     print("DFA exponent: {}".format(alpha))
 
 
