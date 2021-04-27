@@ -33,7 +33,7 @@ def calc_rms(x, scale):
         xfit = np.polyval(coeff, scale_ax)
         # detrending and computing RMS of each window
         rms[e] = np.sqrt(np.mean((xcut-xfit)**2))
-    print('Window length: ', scale, ' Number of windows:', rms.shape[0])
+    print('Window length: ', scale, ' Number of windows: ', rms.shape[0])
     return rms
 
 def dfa(x, scale_lim=[5,9], scale_dens=0.25, show=False):
@@ -132,7 +132,7 @@ def calc_rmswithoverlap(x, scale, overlap, minscale, maxscale):
         i += overlap
         
     rms = np.array(rms)
-    print('Window length: ', scale, ' Number of windows:', rms.shape[0])
+    print('Window length: ', scale, ' Number of windows: ', rms.shape[0])
     return rms
 
 def dfawithoverlap(x, scale_lim=[5,9], scale_dens=0.25, show=False, overlap = 50):
@@ -172,7 +172,7 @@ def dfawithoverlap(x, scale_lim=[5,9], scale_dens=0.25, show=False, overlap = 50
     fluct = np.zeros(len(scales))
     # computing RMS for each window
     for e, sc in enumerate(scales):
-        fluct[e] = np.mean(np.sqrt(calc_rmswithoverlap(y, sc, overlap, min(scales),max(scales))**2)) # inutile... 
+        fluct[e] = np.mean(np.sqrt(calc_rmswithoverlap(y, sc, overlap, min(scales),max(scales))**2))
     # fitting a line to rms data
     coeff = np.polyfit(np.log2(scales), np.log2(fluct), 1)
     if show:
