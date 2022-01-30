@@ -9,6 +9,6 @@ print("Estimated DFA exponent: {}".format(alpha))
 
 
 x = power_law_noise(2**12, true_exp)
-scales, fluct, alpha = dfawithoverlap(x, show = 1, overlap = 50)
+scales, fluct, alpha = dfa_with_overlap(x, show = 1, overlap = 50)
 print("True scaling exponent: {}".format(true_exp))
 print("Estimated DFA exponent: {}".format(alpha))
