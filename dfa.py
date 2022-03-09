@@ -97,7 +97,7 @@ def dfa(x, scale_lim=[5,9], scale_dens=0.25, show=False):
 ##Benedetta Mariani                                                                                   ##
 ########################################################################################################
 
-def calc_rmswithoverlap(x, scale, overlap, minscale, maxscale):
+def calc_rms_with_overlap(x, scale, overlap, minscale, maxscale):
     """
     Root Mean Square in windows with linear detrending.
     
@@ -124,7 +124,7 @@ def calc_rmswithoverlap(x, scale, overlap, minscale, maxscale):
     rms = []
     i = 0
     while i + maxscale < len(x):
-        xcut = x[i:i+ scale]
+        xcut = x[i:i+scale]
         coeff = np.polyfit(scale_ax, xcut, 1)
         xfit = np.polyval(coeff, scale_ax)
         # detrending and computing RMS of each window
@@ -135,7 +135,7 @@ def calc_rmswithoverlap(x, scale, overlap, minscale, maxscale):
     print('Window length: ', scale, ' Number of windows: ', rms.shape[0])
     return rms
 
-def dfawithoverlap(x, scale_lim=[5,9], scale_dens=0.25, show=False, overlap = 50):
+def dfa_with_overlap(x, scale_lim=[5,9], scale_dens=0.25, show=False, overlap = 50):
     """
     Detrended Fluctuation Analysis - algorithm with measures power law
     scaling of the given signal *x*.
@@ -172,7 +172,7 @@ def dfawithoverlap(x, scale_lim=[5,9], scale_dens=0.25, show=False, overlap = 50
     fluct = np.zeros(len(scales))
     # computing RMS for each window
     for e, sc in enumerate(scales):
-        fluct[e] = np.mean(np.sqrt(calc_rmswithoverlap(y, sc, overlap, min(scales),max(scales))**2))
+        fluct[e] = np.mean(calc_rms_with_overlap(y, sc, overlap, min(scales),max(scales)))
     # fitting a line to rms data
     coeff = np.polyfit(np.log2(scales), np.log2(fluct), 1)
     if show:
@@ -200,7 +200,7 @@ if __name__=='__main__':
     x = np.random.randn(n)
     # computing DFA of signal envelope with potentially overlapping windows
     x = np.abs(ss.hilbert(x))
-    scales, fluct, alpha = dfawithoverlap(x, show=1, overlap = 50)
+    scales, fluct, alpha = dfa_with_overlap(x, show=1, overlap = 50)
     ##Note that now for each window length, the same number of windows is considered to compute the 
     ##mean, while before biases were potentially introduced while considering averages referring to 
     ##different numbers of windows
